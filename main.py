@@ -1,10 +1,9 @@
 import ee
+import datetime
 
 ee.Authenticate()
-
 # Initialize the library.
 ee.Initialize()
-
 
 # This is the cloud masking function provided by GEE but adapted for use in Python.
 def maskS2clouds(image):
@@ -22,36 +21,24 @@ def maskS2clouds(image):
 
 
 # Define the geometry of the area for which you would like images.
-# geom = ee.Geometry.Polygon([[34.8777, -13.4055],
-#                     [34.8777, -13.3157],
-#                        [34.9701, -13.3157],
-#                     [34.9701, -13.4055]])
-
-# geom1 = ee.Geometry.Rectangle([40.44278139887932,40.46192258314811,87.72793764887932,55.63910542055555])
-geom = ee.Geometry.Polygon([[41.23379702387932, 55.327254680594635],
-                            [41.23379702387932, 40.24345594801423],
-                            [90.18887514887932, 40.24345594801423],
-                            [90.18887514887932, 55.327254680594635]])
-
-# geom1 = ee.Geometry.Polygon([[40.44278139887932, 40.46192258314811],
-#                            [87.72793764887932, 40.46192258314811],
-#                           [87.72793764887932, 55.63910542055555],
-#                          [40.44278139887932, 55.63910542055555]])
-
+geom = ee.Geometry.Polygon([[45.8777, 45.4055],
+                            [45.8777, 45.3657],
+                            [45.9501, 45.3657],
+                            [45.9501, 45.4055]])
 
 # Call collection of satellite images.
-collection = (ee.ImageCollection("COPERNICUS/S2_SR")
+collection = (ee.ImageCollection('COPERNICUS/S2_SR')
               # Select the Red, Green and Blue image bands, as well as the cloud masking layer.
               .select(['B4', 'B3', 'B2', 'QA60'])
               # Filter for images within a given date range.
-              .filter(ee.Filter.date('2017-01-01', '2017-03-31'))
+              .filter(ee.Filter.date('2017-07-01', '2017-10-31'))
               # Filter for images that overlap with the assigned geometry.
               .filterBounds(geom)
               # Filter for images that have less then 20% cloud coverage.
               .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
               # Apply cloud mask.
               .map(maskS2clouds)
-              )
+             )
 
 # Sort images in the collection by index (which is equivalent to sorting by date),
 # with the oldest images at the front of the collection.
@@ -62,15 +49,16 @@ image = collection.sort('system:index', opt_ascending=False).mosaic()
 image = image.visualize(bands=['B4', 'B3', 'B2'],
                         min=[0.0, 0.0, 0.0],
                         max=[0.3, 0.3, 0.3]
-                        )
+                       )
 
 # Assign export parameters.
+today = datetime.datetime.today()
 task_config = {
     'region': geom.coordinates().getInfo(),
-    'folder': 'new',
-    'scale': 100,
+    'folder': 'Santinel',
+    'scale': 10,
     'crs': 'EPSG:4326',
-    'description': 'test_14_6'
+    'description': 'Example_File_Name' + today.strftime("%Y-%m-%d-%H.%M.%S")
 }
 
 # Export Image
